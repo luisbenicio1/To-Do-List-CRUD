@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Tarefas</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #16191c;
+            min-height: 100svh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 16px;
+            overflow-y: auto;
+        }
+
+        .container {
+            width: min(400px, 100%);
+            background: #0f1113;
+            padding: 28px;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+        }
+
+        h1 {
+            color: #e6e6e6;
+            margin-bottom: 12px;
+        }
+
+        p {
+            color: #bbb;
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            width: 70%;
+            margin-bottom: 8px;
+            background: #222;
+            color: #eee;
+        }
+
+        button {
+            background: #ffd119;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #e6bc15;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            background: #1e2124;
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        li span {
+            flex: 1;
+            margin-left: 8px;
+            color: #fff;
+        }
+
+        #editar {
+            margin-bottom: 12px;
+        }
+
+        p[style] {
+            color: #ff8400 !important;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="container">
+        <h1>Lista de Tarefas</h1>
+        <p>Adicione sua tarefa!</p>
+        <input id="entrada" type="text" placeholder="Digite sua tarefa..." />
+        <button onclick="salvarDados()">Salvar</button>
+        <button onclick="limparTarefas()">Limpar Todas</button>
+        <div id="editar"></div>
+        <p style="margin-top:16px; margin-bottom:8px; font-weight:bold;">Tarefas a fazer:</p>
+        <ul id="resultados"></ul>
+    </div>
+
+    <script>
+    let listaDeTarefas = [];
+    let index = 0;
+
+        function carregarLocalStorage() {
+            const dados = localStorage.getItem('tarefas');
+            if (dados) {
+                listaDeTarefas = JSON.parse(dados);
+                if (listaDeTarefas.length > 0) {
+                    index = Math.max(...listaDeTarefas.map(t => t.id)) + 1;
+                }
+            }
+        }
+
+        function salvarDados() {
+    // CREATE - Adiciona nova tarefa
+            let campo = document.getElementById("entrada");
+            let entrada = campo.value;
+            if (!entrada.trim()) return;
+            let entradaObj = {
+                id: index,
+                texto: entrada,
+                concluido: false
+            };
+            index++;
+            listaDeTarefas.push(entradaObj);
+            localStorage.setItem('tarefas', JSON.stringify(listaDeTarefas));
+            campo.value = "";
+            campo.focus();
+            mostrar();
+        }
+
+        function mostrar() {
+    // READ - Exibe todas as tarefas na tela
+            let ul = document.getElementById("resultados");
+            let html = "";
+            listaDeTarefas.forEach(elemento => {
+                html += `
+          <li>
+            <input type="checkbox" id="check_${elemento.id}" ${elemento.concluido ? "checked" : ""} onchange="marcar(${elemento.id})">
+            <span id="item_${elemento.id}" style="text-decoration:${elemento.concluido ? "line-through" : "none"}">${elemento.texto}</span>
+            <button onclick="editar(${elemento.id})">Editar</button>
+            <button onclick="deletar(${elemento.id})">Deletar</button>
+          </li>`;
+            });
+            ul.innerHTML = html;
+        }
+
+        function editar(id) {
+    // UPDATE - Prepara campo para editar tarefa (botão "Editar")
+            let resultado = listaDeTarefas.find(obj => obj.id === id);
+            let html = `<input type="text" id="textoParaEditar" value="${resultado.texto}">
+                  <button onclick="editarDados(${id})">Editar</button>`;
+            document.getElementById('editar').innerHTML = html;
+        }
+
+        function editarDados(id) {
+    // UPDATE - Salva edição da tarefa 
+            let textoParaEditar = document.getElementById("textoParaEditar").value;
+            let resultado = listaDeTarefas.find(obj => obj.id === id);
+            resultado.texto = textoParaEditar;
+            localStorage.setItem('tarefas', JSON.stringify(listaDeTarefas));
+            mostrar();
+            document.getElementById('editar').innerHTML = "";
+        }
+
+        function deletar(id) {
+    // DELETE - Remove tarefa selecionada
+            listaDeTarefas = listaDeTarefas.filter(obj => obj.id !== id);
+            localStorage.setItem('tarefas', JSON.stringify(listaDeTarefas));
+            mostrar();
+        }
+
+        function limparTarefas() {
+    // DELETE - Remove todas as tarefas
+            listaDeTarefas = [];
+            localStorage.setItem('tarefas', JSON.stringify(listaDeTarefas));
+            mostrar();
+            document.getElementById('editar').innerHTML = "";
+        }
+
+        function marcar(id) {
+            const checkbox = document.getElementById('check_' + id);
+            const tarefa = listaDeTarefas.find(obj => obj.id === id);
+            tarefa.concluido = checkbox.checked;
+            localStorage.setItem('tarefas', JSON.stringify(listaDeTarefas));
+            mostrar();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarLocalStorage();
+            mostrar();
+        });
+    </script>
+</body>
+
+</html>
